@@ -23,25 +23,27 @@ app.get('/', function (req, res) {
 
 
 
-app.get('/todos', function(req, res){
+app.get('/todos', function (req, res) {
     var query = req.query;
     var where = {};
-    
-    if(query.hasOwnProperty('completed') && query.completed == 'false'){
-           where.completed = false;
-    } else if(query.hasOwnProperty('completed') && query.completed == 'true'){
-           where.completed = true;
+
+    if (query.hasOwnProperty('completed') && query.completed == 'false') {
+        where.completed = false;
+    } else if (query.hasOwnProperty('completed') && query.completed == 'true') {
+        where.completed = true;
     }
-    
-    if(query.hasOwnProperty('q') && query.q.length > 0){
+
+    if (query.hasOwnProperty('q') && query.q.length > 0) {
         where.description = {
-          $like: '%' + query.q + '%'  
+            $like: '%' + query.q + '%'
         };
     }
-    
-    db.todo.findAll({where: where}).then(function(todos){
-       res.json(todos); 
-    }, function(e){
+
+    db.todo.findAll({
+        where: where
+    }).then(function (todos) {
+        res.json(todos);
+    }, function (e) {
         res.status(500).send();
     })
 });
@@ -49,16 +51,16 @@ app.get('/todos', function(req, res){
 
 app.get('/todos/:id', function (req, res) {
     var todoId = parseInt(req.params.id);
-    db.todo.findById(todoId).then(function(todo){
-        if(!!todo){
+    db.todo.findById(todoId).then(function (todo) {
+        if (!!todo) {
             res.json(todo.toJSON());
         } else {
             res.status(404).send();
         }
-    }, function(e){
+    }, function (e) {
         res.status(500).send();
     });
-    
+
 
 });
 
@@ -66,60 +68,55 @@ app.get('/todos/:id', function (req, res) {
 app.delete('/todos/:id', function (req, res) {
 
     var todoId = parseInt(req.params.id, 10);
-    
+
     db.todo.destroy({
         where: {
             id: todoId
         }
-    }).then(function(rowsDeleted){
-        if(rowsDeleted === 0){
+    }).then(function (rowsDeleted) {
+        if (rowsDeleted === 0) {
             res.status(404).json({
                 error: "No Todo with specified ID"
             });
         } else {
             res.status(204).send();
         }
-    }, function(e){
+    }, function (e) {
         res.status(500).send();
     });
-    
+
 });
-    
+
 
 app.put('/todos/:id', function (req, res) {
     var todoId = parseInt(req.params.id, 10);
-    var matchedTodo = _.findWhere(todos, {
-        id: todoId
-    });
+
     var body = _.pick(req.body, "description", "completed");
-    var validAttributes = {};
+    var Attributes = {};
 
 
-    if (!matchedTodo) {
-        return res.status(404).send();
+    if (body.hasOwnProperty('completed')) {
+        Attributes.completed = body.completed;
     }
 
-
-    if (body.hasOwnProperty('completed') && _.isBoolean(body.completed)) {
-        validAttributes.completed = body.completed;
-    } else if (body.hasOwnProperty('completed')) {
-        return res.status(400).send();
-    } else {
-        //Never Provided Attribute, No Problems
+    if (body.hasOwnProperty('description')) {
+        Attributes.description = body.description;
     }
 
-    if (body.hasOwnProperty('description') && _.isString(body.description) && body.description.length > 0) {
-        validAttributes.description = body.description;
-    } else if (body.hasOwnProperty('description')) {
-        return res.status(400).send();
-    } else {
-        //Never Provided, No Problems
-    }
+    db.todo.findById(todoId).then(function (todo) {
+        if (todo) {
+            todo.update(Attributes).then(function (todo) {
+                res.json(todo.toJSON());
+            }, function (e) {
+                res.status(400).json(e);
+            });
 
-    _.extend(matchedTodo, validAttributes);
-
-    res.json(matchedTodo);
-
+        } else {
+            res.status(404).send();
+        }
+    }, function () {
+        res.status(500).send();
+    })
 
 });
 
@@ -129,10 +126,10 @@ app.put('/todos/:id', function (req, res) {
 
 app.post('/todos', function (req, res) {
     var body = _.pick(req.body, "description", "completed");
-    
-    db.todo.create(body).then(function(todo){
+
+    db.todo.create(body).then(function (todo) {
         res.json(todo.toJSON());
-    }, function(e){
+    }, function (e) {
         res.status(400).json(e);
     });
 });
