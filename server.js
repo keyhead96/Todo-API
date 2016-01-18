@@ -37,11 +37,29 @@ app.get('/todos/:id', function(req, res){
     res.json('Asking for todo with ID of: ' + req.params.id);
 });
 
+
+app.delete('/todos/:id', function(req, res){
+   
+    var todoId = parseInt(req.params.id, 10);
+    var matchedTodo = _.findWhere(todos, {id: todoId});
+    
+    if(matchedTodo){
+         todos = _.without(todos, matchedTodo);
+    } else {
+        res.status(404).send();
+    }
+    
+    res.json(matchedTodo);
+    
+    
+});
+
+
 app.post('/todos', function(req, res){
     var body = _.pick(req.body,"description", "completed");
     
     if(!_.isBoolean(body.completed) || !_.isString(body.description) || body.description.trim().length === 0)     {
-        return res.status(400).send();
+        return res.status(400).send("No Todo Found!");
     }
     
     
