@@ -151,29 +151,16 @@ app.post('/users', function(req, res){
 app.post('/users/login', function(req, res){
     var loginDetails = _.pick(req.body, 'email', 'password');
     
-    if(typeof loginDetails.email !== 'string' || typeof loginDetails.password !== 'string'){
-        return res.status(400).send();
-    } 
-    
-    db.user.findOne({
-        where: {
-            email: loginDetails.email
-        }
-    }).then(function(user){
-        if(!user || !bCrypt.compareSync(loginDetails.password, user.get('password_hash'))){
-            return res.status(401).send();
-        }
-        
+    db.user.authenticate(loginDetails).then(function(user){
         res.json(user.toPublicJSON());
     }, function(e){
-        res.status(500).send();
+        res.status(401).send();
     });
-    
 });
 
 
 
-db.sequelize.sync().then(function () {
+db.sequelize.sync({force: true}).then(function () {
     app.listen(PORT, function () {
         console.log("Server Started. PORT: " + PORT);
     });
