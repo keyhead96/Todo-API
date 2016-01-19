@@ -2,6 +2,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 var _ = require('underscore');
 var db = require('./db.js');
+var bCrypt = require('bcryptjs');
 
 
 var app = express();
@@ -143,6 +144,31 @@ app.post('/users', function(req, res){
     }, function(e){
        res.status(400).json(e); 
     });
+});
+
+
+
+app.post('/users/login', function(req, res){
+    var loginDetails = _.pick(req.body, 'email', 'password');
+    
+    if(typeof loginDetails.email !== 'string' || typeof loginDetails.password !== 'string'){
+        return res.status(400).send();
+    } 
+    
+    db.user.findOne({
+        where: {
+            email: loginDetails.email
+        }
+    }).then(function(user){
+        if(!user || !bCrypt.compareSync(loginDetails.password, user.get('password_hash'))){
+            return res.status(401).send();
+        }
+        
+        res.json(user.toPublicJSON());
+    }, function(e){
+        res.status(500).send();
+    });
+    
 });
 
 
